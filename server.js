@@ -8,15 +8,14 @@ const jwt = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
 
 
-//This allow access the information coming from forms
-app.use(express.urlencoded({ extended: true }))
-app.use(express.json())
-app.use(cookieParser())
+app.use(express.urlencoded({ extended: true })) //helps to understand and read form data when it's submitted from a web page.
+app.use(express.json()) //  allow to parse incoming requests with JSON payloads.
+app.use(cookieParser()) // parses cookies (req.cookies), making them accessible in our route handlers
 
 const users = [{name: "Bikash", password:"hello"}]
 
  //app.set('key', 'value')
-app.set('view engine', 'ejs')
+app.set('view engine', 'ejs') // allows to render ejs file
 
 app.get('/', (req, res)=>{
     res.render('home')
@@ -40,6 +39,7 @@ app.post('/register',(req,res)=>{
         users.push({name: `${name}`, password: `${hashPassword}`})
         // res.send(hashPassword)
     })
+    res.redirect("/login")
 })
 
 app.get('/login', (req, res)=>{
@@ -51,12 +51,12 @@ app.post('/login',(req, res)=>{
     const password = req.body.password
     const user = users.find(user => user.name === name)
     
-    // if (!user || !bcrypt.compareSync(password, user.password)) {
-    //     return res.status(401).json({ error: 'Invalid username or password' });
-    // }
-    if(!user){
+    if (!user || !bcrypt.compareSync(password, user.password)) {
         return res.status(401).json({ error: 'Invalid username or password' });
     }
+    // if(!user){
+    //     return res.status(401).json({ error: 'Invalid username or password' });
+    // }
     
     const token = jwt.sign({user: user.name}, "secretkey", {expiresIn: "1h"});
 
