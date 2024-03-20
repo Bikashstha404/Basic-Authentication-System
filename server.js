@@ -26,17 +26,20 @@ app.get('/register', (req, res)=>{
 })
 app.post('/register',(req,res)=>{
     // res.send(req.body)
-    const name = req.body.name
-    const password = req.body.password
+    // const name = req.body.name
+    // const password = req.body.password
 
-    if(users.find(user => user.name === name)){
-        return res.status(400).send("Error: User name already exists")
+    const{ name, email, password} = req.body
+
+    if(users.find(user => user.email === email)){
+        return res.status(400).send("Error: Email already exists")
     }
     bcrypt.hash(password, 10, (error, hashPassword)=>{
         if(error){
             return res.status(500).send(`Error hashing password: ${error}`)
         }
-        users.push({name: `${name}`, password: `${hashPassword}`})
+        const id = users.length + 1;
+        users.push({id, name: `${name}`,email: `${email}`, password: `${hashPassword}`})
         // res.send(hashPassword)
     })
     res.redirect("/login")
@@ -47,9 +50,11 @@ app.get('/login', (req, res)=>{
 })
 
 app.post('/login',(req, res)=>{
-    const name = req.body.name
-    const password = req.body.password
-    const user = users.find(user => user.name === name)
+    // const name = req.body.name
+    // const password = req.body.password
+
+    const{email, password} = req.body;
+    const user = users.find(user => user.email === email)
     
     if (!user || !bcrypt.compareSync(password, user.password)) {
         return res.status(401).json({ error: 'Invalid username or password' });
