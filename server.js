@@ -7,12 +7,15 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
 
+//Making a connection to the mongoose database
+const mongoose = require('mongoose')
+const User = require("./user")
+mongoose.connect("mongodb://localhost/user_data")
+
 
 app.use(express.urlencoded({ extended: true })) //helps to understand and read form data when it's submitted from a web page.
 app.use(express.json()) //  allow to parse incoming requests with JSON payloads.
 app.use(cookieParser()) // parses cookies (req.cookies), making them accessible in our route handlers
-
-const users = [{name: "Bikash", password:"hello"}]
 
  //app.set('key', 'value')
 app.set('view engine', 'ejs') // allows to render ejs file
@@ -24,25 +27,35 @@ app.get('/', (req, res)=>{
 app.get('/register', (req, res)=>{
     res.render('register')
 })
-app.post('/register',(req,res)=>{
-    // res.send(req.body)
-    // const name = req.body.name
-    // const password = req.body.password
+app.post('/register',async(req,res)=>{
 
     const{ name, email, password} = req.body
 
-    if(users.find(user => user.email === email)){
-        return res.status(400).send("Error: Email already exists")
-    }
-    bcrypt.hash(password, 10, (error, hashPassword)=>{
-        if(error){
-            return res.status(500).send(`Error hashing password: ${error}`)
+    try{
+        
+        const existingUser = await User.findOne({ email })
+        if(existingUser){
+            return res.status(400).json({ error: "Email already exists"})
         }
-        const id = users.length + 1;
-        users.push({id, name: `${name}`,email: `${email}`, password: `${hashPassword}`})
-        // res.send(hashPassword)
-    })
-    res.redirect("/login")
+
+        bcrypt.hash(password, 10, async(error, hashPassword)=>{
+            if(error){
+                return res.status(500).json({ error: `Error hashing password: ${error}` });
+            }
+            const newUser = new User({ 
+                name: name, 
+                email: email, 
+                password: hashPassword })
+                
+            await newUser.save()
+            res.send("Registration Successful")
+        })
+        
+    }
+    catch(e){
+        console.log(e.message)
+    }
+    
 })
 
 app.get('/login', (req, res)=>{
@@ -50,8 +63,6 @@ app.get('/login', (req, res)=>{
 })
 
 app.post('/login',(req, res)=>{
-    // const name = req.body.name
-    // const password = req.body.password
 
     const{email, password} = req.body;
     const user = users.find(user => user.email === email)
@@ -59,9 +70,6 @@ app.post('/login',(req, res)=>{
     if (!user || !bcrypt.compareSync(password, user.password)) {
         return res.status(401).json({ error: 'Invalid username or password' });
     }
-    // if(!user){
-    //     return res.status(401).json({ error: 'Invalid username or password' });
-    // }
     
     const token = jwt.sign({user: user.name}, "secretkey", {expiresIn: "1h"});
 
@@ -69,12 +77,11 @@ app.post('/login',(req, res)=>{
         httpOnly: true
     })
 
-    // res.redirect(`/profile?name=${name}`)
+    res.send("Login Successful")
     res.redirect(`/profile`)
 })
 
 app.get('/profile',authenticate, (req, res)=>{
-    // res.render("profile", {name: req.query.name})
     res.render("profile", {name: req.user})
 })
 
@@ -95,4 +102,6 @@ app.get('/logout', (req,res)=>{
     res.clearCookie('token')
     res.redirect('/login')
 })
+
+
 app.listen(4040)
