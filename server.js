@@ -50,10 +50,10 @@ app.post('/register',async(req,res)=>{
             await newUser.save()
             res.send("Registration Successful")
         })
-        
     }
     catch(e){
         console.log(e.message)
+        return res.status(500).json({ error: "Server Error"})
     }
     
 })
@@ -62,32 +62,43 @@ app.get('/login', (req, res)=>{
     res.render('login')
 })
 
-app.post('/login',(req, res)=>{
+app.post('/login',async(req, res)=>{
 
     const{email, password} = req.body;
-    const user = users.find(user => user.email === email)
-    
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-        return res.status(401).json({ error: 'Invalid username or password' });
+    try{
+
+        const user = await User.findOne({ email})
+  
+        if (!user || !bcrypt.compareSync(password, user.password)) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        const token = jwt.sign({user}, "secretkey", {expiresIn: "1h"});
+
+        res.cookie('token', token, {
+            httpOnly: true
+        })
+
+        res.send("Login Successful")
+        // res.redirect(`/profile`)
+        }
+    catch(e){
+        console.log(e.message)
+        return res.status(500).json("Server Error")
     }
     
-    const token = jwt.sign({user: user.name}, "secretkey", {expiresIn: "1h"});
-
-    res.cookie('token', token, {
-        httpOnly: true
-    })
-
-    res.send("Login Successful")
-    res.redirect(`/profile`)
 })
 
 app.get('/profile',authenticate, (req, res)=>{
-    res.render("profile", {name: req.user})
+    res.render("profile", {name: req.user.name})
+})
+
+app.post('/profile', authenticate, (req,res)=>{
+    res.send(`${req.user.name}`)
 })
 
 function authenticate(req,res,next){
-    const token = req.cookies.token
-    
+    const token = req.cookies.token    
     if(!token){
         return res.status(401).json({error: 'No tokens provided'})
     }
