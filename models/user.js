@@ -11,9 +11,9 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         lowercase: true,
+        unique: true,
         validate: {
             validator: function(value) {
-                // Regular expression for email validation
                 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                 return emailRegex.test(value);
               },
@@ -33,4 +33,5 @@ const userSchema = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose.model("User", userSchema)
+const User = mongoose.model("User", userSchema);
+module.exports = { User };
