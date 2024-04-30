@@ -17,6 +17,9 @@ const {
     isModerator
 }= require("../middlewares/user")
 
+const {validate} = require("../middlewares/validate")
+const {signupSchema} = require("../validators/registration_validator")
+
 
 router
     .route("/")
@@ -25,7 +28,7 @@ router
 router
     .route("/register")
     .get(handleRegistrationPage)
-    .post(handleRegistrationData)
+    .post(validate(signupSchema), handleRegistrationData)
 
 router
     .route("/login")
